@@ -10,12 +10,13 @@
 
 
 /* ---- Includes ---- */
-#include <fuse.h>
+#include <linux/fuse.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <fcntl.h>
 
 #include "util.h"
 #include "options.h"

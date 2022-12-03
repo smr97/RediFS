@@ -8,6 +8,7 @@ LIB_FLAGS = $(addprefix -l,$(LIBS))
 CDEFINES = _FILE_OFFSET_BITS=64 FUSE_USE_VERSION=26
 CFLAGS = -g -Wall
 CFLAGS += $(addprefix -D,$(CDEFINES))
+CINCLUDES = /usr/include/linux/fuse.h
 
 SRC_DIR = src
 BUILD_DIR = build
@@ -27,7 +28,7 @@ $(BUILD_DIR)/redifs: $(OBJ_PATHS) | $(BUILD_DIR)
 	$(CC) $^ -o $@ $(LIB_FLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR) $(DEP_DIR)
-	$(CC) -c $< $(CFLAGS) -M -MF $(patsubst $(OBJ_DIR)/%.o,$(DEP_DIR)/%.o.d,$@) -MT $@
+	$(CC) -I $(CINCLUDES) -c $< $(CFLAGS) -M -MF $(patsubst $(OBJ_DIR)/%.o,$(DEP_DIR)/%.o.d,$@) -MT $@
 	$(CC) -c $< -o $@ $(CFLAGS)
 
 

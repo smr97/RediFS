@@ -10,7 +10,7 @@
 
 
 /* ---- Includes ---- */
-#include <fuse.h>
+#include <linux/fuse.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,9 +31,9 @@ int main(int argc, char* argv[])
     int result;
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
     struct redifs_settings settings = {
-        .host = NULL,
+        .host = "127.0.0.1",
         .dir = NULL,
-        .port = 0,
+        .port = 6379,
         .create_fs = 0,
         .name = DEFAULT_NAME,
     };

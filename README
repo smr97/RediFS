@@ -1,2 +1,4 @@
 RediFS
+In the main function, line 37 we need to run the code first with create_fs as 1. Then, we need to run it with 0.
+The first time it creates the file system on the server, then it reads the existing redis server dump.
 

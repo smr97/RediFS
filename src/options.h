@@ -14,7 +14,7 @@
 
 
 /* ---- Includes ---- */
-#include <fuse/fuse_opt.h>
+#include </usr/include/fuse/fuse_opt.h>
 
 #include "redifs_types.h"
 
