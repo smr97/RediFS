@@ -191,7 +191,7 @@ long long retrieveNodeInfo(node_id_t nodeId, int index)
     long long nodeInfo;
     int handle;
 
-    snprintf(key, 1024, "%s::info:%d", g_settings->name, index);
+    snprintf(key, 1024, "%s::info:%d", g_settings->name, (int)nodeId);
     handle = redisCommand_LINDEX(key, index, &nodeInfoStr);
     if (!handle)
     {

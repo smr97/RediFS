@@ -26,6 +26,7 @@
 #include "options.h"
 #include "util.h"
 
+#define ISFILE 69
 /* ---- Defines ---- */
 #define KEY_NODE_ID_CTR "node_id_ctr"
 
@@ -57,7 +58,7 @@ int redifs_getattr(const char *path, struct stat *stbuf) {
   free(lpath);
 
   CLEAR_STRUCT(stbuf, struct stat);
-
+ 
   nodeId = retrievePathNodeId(path);
   if (nodeId < 0) {
     return -ENOENT;
@@ -71,7 +72,7 @@ int redifs_getattr(const char *path, struct stat *stbuf) {
   if (mode & S_IFDIR) {
     stbuf->st_mode = mode;
     stbuf->st_nlink = 2;
-  } else {
+  } else if (mode & ISFILE) {
     stbuf->st_mode = mode;
     stbuf->st_nlink = 1;
     stbuf->st_size = strlen("blablabla");
@@ -101,7 +102,7 @@ int redifs_mknod(const char *path, mode_t mode, dev_t dev) {
 
   // Create node info:
   snprintf(key, 1024, "%s::info:%lld", g_settings->name, nodeId);
-  args[NODE_INFO_MODE] = mode;
+  args[NODE_INFO_MODE] = mode | ISFILE;
   args[NODE_INFO_UID] = 0;              // TODO: UID.
   args[NODE_INFO_GID] = 0;              // TODO: GID.
   args[NODE_INFO_ACCESS_TIME_SEC] = 1;  // TODO.

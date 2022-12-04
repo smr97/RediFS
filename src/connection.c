@@ -330,6 +330,13 @@ redisReply* execRedisCommand(int cmd, const char* strArgs[], long long intArgs[]
     retries = 2;
     while (1)
     {
+        fprintf(stderr, "USED REDIS CALL: %s with args ", commandFormat->cmd);
+        int i = 1;
+        for(; i<argIndex; i++){
+            fprintf(stderr, "%s ", argv[i]);
+        }
+        fprintf(stderr, "\n");
+
         reply = redisCommandArgv(redis1, argIndex, argv, NULL);
         if (!reply)
         {
@@ -362,6 +369,7 @@ redisReply* execRedisCommand(int cmd, const char* strArgs[], long long intArgs[]
 
         break;
     }
+
 
     // Check reply type:
     replyTypeOk = 0;
