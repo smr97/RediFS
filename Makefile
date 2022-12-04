@@ -1,4 +1,4 @@
-CC = clang
+CC = ~/llvm-project/build/bin/clang
 MKDIR = mkdir
 RM = rm
 
