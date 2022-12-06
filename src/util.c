@@ -176,6 +176,7 @@ int createFileSystem()
     {
         return 0; // Failure.
     }
+    snprintf(key, 1024, "%s::data", g_settings->name);
 
     return 1; // Success.
 }

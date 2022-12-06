@@ -12,6 +12,7 @@
 // ---- Includes:
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <hiredis/hiredis.h>
 
@@ -103,6 +104,7 @@ enum {
     REDIS_CMD_LSET_INT,
     REDIS_CMD_SET,
     REDIS_CMD_RPUSH_INT,
+    REDIS_CMD_HSET_STR,
 };
 
 enum {
@@ -121,6 +123,7 @@ static struct command_format commandFormats[] = {
     /* LSET_INT  */ { "LSET",   3, { ARG_STR, ARG_INT, ARG_INT }, 1, { REDIS_REPLY_STATUS } },
     /* SET       */ { "SET",    2, { ARG_STR, ARG_STR }, 1, { REDIS_REPLY_STATUS } },
     /* RPUSH_INT */ { "RPUSH",  2, { ARG_STR, ARG_INTS }, 1, { REDIS_REPLY_INTEGER } },
+    /* HSET_STR */ { "HSET",  3, { ARG_STR, ARG_STR, ARG_STR }, 1, { REDIS_REPLY_INTEGER } },
 };
 
 
@@ -436,6 +439,28 @@ extern int redisCommand_HSET_INT(const char* key, const char* field, long long v
     long long intArgs[] = { value };
 
     reply = execRedisCommand(REDIS_CMD_HSET_INT, strArgs, intArgs);
+    if (!reply)
+    {
+        return 0; // Failure.
+    }
+
+    if (result)
+    {
+        *result = reply->integer;
+    }
+
+    freeReplyObject(reply);
+
+    return 1; // Success.
+}
+
+int redisCommand_HSET_STR(const char* key, const char* field, char* value, int* result)
+{
+    redisReply* reply;
+    const char* strArgs[] = { key, field, value };
+    //long long intArgs[] = { field };
+
+    reply = execRedisCommand(REDIS_CMD_HSET_STR, strArgs, NULL);
     if (!reply)
     {
         return 0; // Failure.

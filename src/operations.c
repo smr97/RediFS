@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "connection.h"
 #include "operations.h"
@@ -69,6 +70,50 @@ int redifs_getattr(const char *path, struct stat *stbuf) {
     return mode;
   }
 
+  uid_t uid = retrieveNodeInfo(nodeId, NODE_INFO_UID);
+  gid_t gid = retrieveNodeInfo(nodeId, NODE_INFO_GID);
+  stbuf->st_uid = uid;
+  stbuf->st_gid = gid;
+
+  if (mode & S_IFDIR) {
+    stbuf->st_mode = mode;
+    stbuf->st_nlink = 2;
+  } else if (mode & ISFILE) {
+    stbuf->st_mode = mode;
+    stbuf->st_nlink = 1;
+    stbuf->st_size = strlen("blablabla");
+  }
+
+  return 0;
+}
+
+int redifs_setattr(const char *path, struct stat *stbuf) {
+  char *lpath;
+  char *dirName;
+  node_id_t nodeId;
+  long long mode;
+
+  lpath = strdup(path);
+  dirName = strdup(basename(lpath));
+  free(lpath);
+
+  CLEAR_STRUCT(stbuf, struct stat);
+ 
+  nodeId = retrievePathNodeId(path);
+  if (nodeId < 0) {
+    return -ENOENT;
+  }
+
+  mode = retrieveNodeInfo(nodeId, NODE_INFO_MODE);
+  if (mode < 0) {
+    return mode;
+  }
+
+  uid_t uid = retrieveNodeInfo(nodeId, NODE_INFO_UID);
+  gid_t gid = retrieveNodeInfo(nodeId, NODE_INFO_GID);
+  stbuf->st_uid = uid;
+  stbuf->st_gid = gid;
+
   if (mode & S_IFDIR) {
     stbuf->st_mode = mode;
     stbuf->st_nlink = 2;
@@ -102,9 +147,9 @@ int redifs_mknod(const char *path, mode_t mode, dev_t dev) {
 
   // Create node info:
   snprintf(key, 1024, "%s::info:%lld", g_settings->name, nodeId);
-  args[NODE_INFO_MODE] = mode | ISFILE;
-  args[NODE_INFO_UID] = 0;              // TODO: UID.
-  args[NODE_INFO_GID] = 0;              // TODO: GID.
+  args[NODE_INFO_MODE] = mode;
+  args[NODE_INFO_UID] = getuid();              // TODO: UID.
+  args[NODE_INFO_GID] = getgid();              // TODO: GID.
   args[NODE_INFO_ACCESS_TIME_SEC] = 1;  // TODO.
   args[NODE_INFO_ACCESS_TIME_NSEC] = 1; // TODO.
   args[NODE_INFO_MOD_TIME_SEC] = 1;     // TODO.
@@ -117,6 +162,7 @@ int redifs_mknod(const char *path, mode_t mode, dev_t dev) {
   // Determine name of new file:
   lpath = strdup(path);
   newFileName = strdup(basename(lpath));
+  char* newFileName1 = strdup(basename(lpath));
   free(lpath);
 
   // Determine parent dir node ID:
@@ -130,6 +176,10 @@ int redifs_mknod(const char *path, mode_t mode, dev_t dev) {
   // Execute Redis command:
   snprintf(key, 1024, "%s::node:%lld", g_settings->name, parentNodeId);
   redisResult = redisCommand_HSET_INT(key, newFileName, nodeId, NULL);
+
+  //Initialise hashtable in redis to hold the file contents
+  snprintf(key, 1024, "%s::data", g_settings->name);
+  redisResult = redisCommand_HSET_STR(key, newFileName1, "", NULL);
 
   free(newFileName);
 
@@ -162,8 +212,8 @@ int redifs_mkdir(const char *path, mode_t mode) {
   // Create node info:
   snprintf(key, 1024, "%s::info:%lld", g_settings->name, nodeId);
   args[NODE_INFO_MODE] = mode | S_IFDIR;
-  args[NODE_INFO_UID] = 0;              // TODO: UID.
-  args[NODE_INFO_GID] = 0;              // TODO: GID.
+  args[NODE_INFO_UID] = getuid();              // TODO: UID.
+  args[NODE_INFO_GID] = getgid();              // TODO: GID.
   args[NODE_INFO_ACCESS_TIME_SEC] = 1;  // TODO.
   args[NODE_INFO_ACCESS_TIME_NSEC] = 1; // TODO.
   args[NODE_INFO_MOD_TIME_SEC] = 1;     // TODO.
@@ -338,17 +388,9 @@ int redifs_utimens(const char *path, const struct timespec tv[2]) {
 /* ---- open ---- */
 int redifs_open(const char* path, struct fuse_file_info* fileInfo)
 {
-    if (0 != strcmp(path, "/bla"))
-    {
-        return -ENOENT;
-    }
-
-    if ((fileInfo->flags & 3) != O_RDONLY)
-    {
-        return -EACCES;
-    }
-
-    return 0;
+  node_id_t nodeId = retrievePathNodeId(path);
+  if(nodeId < 0) return -ENOENT;
+  else return 0;
 }
 
 
@@ -356,25 +398,35 @@ int redifs_open(const char* path, struct fuse_file_info* fileInfo)
 int redifs_read(const char* path, char* buf, size_t size, off_t offset,
                        struct fuse_file_info* fileInfo)
 {
-    size_t len;
+    //TODO also ignoring size and offset here
+  char key[1024];
+  int redisResult;
+  snprintf(key, 1024, "%s::data", g_settings->name);
+  char* file_name = basename(path);
+  char* res;
+  redisResult = redisCommand_HGET(key, file_name, &res);
+  memcpy(buf, res, strlen(res));
+  if (redisResult == 0){
+      return -ENOENT;
+  }
+  return strlen(buf);
+}
 
-    if (0 != strcmp(path, "/bla"))
-    {
-        return -ENOENT;
-    }
-
-    len = strlen("blablabla");
-    if (offset < len)
-    {
-        if (offset + size > len) size = len - offset;
-        memcpy(buf, "blablabla" + offset, size);
-    }
-    else
-    {
-        size = 0;
-    }
-
-    return size;
+int redifs_write(const char * path, const char *buf, size_t size, off_t _offset, struct fuse_file_info *fileInfo){
+    //TODO we are ignoring offset for now
+  node_id_t nodeId = retrievePathNodeId(path);
+  char key[1024];
+  int redisResult;
+  snprintf(key, 1024, "%s::data", g_settings->name);
+  char* file_name = basename(path);
+  char *new_content = (char*) malloc(sizeof(char)*(size));
+  strcpy(new_content, buf);
+  redisResult = redisCommand_HSET_STR(key, file_name, new_content, NULL);
+  if (redisResult == 0){
+      return -ENOENT;
+  }
+  free(new_content);
+  return size;
 }
 
 
@@ -389,6 +441,7 @@ struct fuse_operations redifs_oper = {
     .utimens = redifs_utimens,
     .open = redifs_open,
     .read = redifs_read,
+    .write = redifs_write,
 };
 
 #endif // _OPERATIONS_H_
