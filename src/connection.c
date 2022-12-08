@@ -31,7 +31,7 @@ static struct redis_connection_info redis1_info = { NULL, 0 };
 static redisContext* redis1 = NULL;
 
 
-#define MAX_OPEN_REPLIES 4
+#define MAX_OPEN_REPLIES 400
 static redisReply* openReplies[MAX_OPEN_REPLIES];
 #define OPEN_REPLIES_BITMAP_SIZE ((MAX_OPEN_REPLIES - 1) / sizeof(unsigned int)) + 1
 static unsigned int openRepliesBitmap[OPEN_REPLIES_BITMAP_SIZE];

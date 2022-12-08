@@ -50,6 +50,7 @@ enum {
 
 /* ---- getattr ---- */
 int redifs_getattr(const char *path, struct stat *stbuf) {
+    clock_t st = clock();
   char *lpath;
   char *dirName;
   node_id_t nodeId;
@@ -85,6 +86,8 @@ int redifs_getattr(const char *path, struct stat *stbuf) {
     stbuf->st_nlink = 1;
     stbuf->st_size = file_size;
   }
+  clock_t end = clock();
+  printf("************* Number of ticks %ld\n *****************", end - st);
 
   return 0;
 }
