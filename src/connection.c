@@ -105,6 +105,7 @@ enum {
     REDIS_CMD_SET,
     REDIS_CMD_RPUSH_INT,
     REDIS_CMD_HSET_STR,
+    REDIS_CMD_LRANGE,
 };
 
 enum {
@@ -124,6 +125,7 @@ static struct command_format commandFormats[] = {
     /* SET       */ { "SET",    2, { ARG_STR, ARG_STR }, 1, { REDIS_REPLY_STATUS } },
     /* RPUSH_INT */ { "RPUSH",  2, { ARG_STR, ARG_INTS }, 1, { REDIS_REPLY_INTEGER } },
     /* HSET_STR */ { "HSET",  3, { ARG_STR, ARG_STR, ARG_STR }, 1, { REDIS_REPLY_INTEGER } },
+    /* LRANGE    */ { "LRANGE", 3, { ARG_STR, ARG_INT, ARG_INT }, 3, { REDIS_REPLY_ARRAY, REDIS_REPLY_NIL } },
 };
 
 
@@ -514,6 +516,20 @@ int redisCommand_LINDEX(const char* key, long long index, char** result)
     return handleStringReply(reply, result);
 }
 
+int redisCommand_LRANGE(const char* key, long long start, long long stop, int* result)
+{
+    redisReply* reply;
+    const char* strArgs[] = { key };
+    long long intArgs[] = { start, stop };
+
+    reply = execRedisCommand(REDIS_CMD_LRANGE, strArgs, intArgs);
+    if (!reply)
+    {
+        return 0; // Failure.
+    }
+
+    return handleStringArrayReply(reply, result);
+}
 
 // Redis LSET command with integer value:
 int redisCommand_LSET_INT(const char* key, long long index, long long value)

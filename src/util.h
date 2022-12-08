@@ -26,6 +26,7 @@ extern node_id_t retrievePathNodeId(const char* path);
 extern int checkFileSystemExists();
 extern int createFileSystem();
 extern long long retrieveNodeInfo(node_id_t nodeId, int index);
+int retrieveNodeMultInfo(node_id_t nodeId, int start, int end, int result[]);
 
 
 #endif // _UTIL_H_

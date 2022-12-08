@@ -211,3 +211,20 @@ long long retrieveNodeInfo(node_id_t nodeId, int index)
     return nodeInfo;
 }
 
+/*
+ * Retrieve node information.
+*/
+int retrieveNodeMultInfo(node_id_t nodeId, int start, int end, int result[])
+{
+    char key[1024];
+    int handle;
+
+    snprintf(key, 1024, "%s::info:%d", g_settings->name, (int)nodeId);
+    handle = redisCommand_LRANGE(key, start, end, result);
+    if (!handle)
+    {
+        return -EIO;
+    }
+
+    return handle;
+}

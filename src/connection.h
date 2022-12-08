@@ -36,6 +36,7 @@ extern int redisCommand_LSET_INT(const char* key, long long index, long long val
 extern int redisCommand_SET(const char* key, const char* value);
 extern int redisCommand_RPUSH_INT(const char* key, long long values[], long long value_count, int* result);
 extern int redisCommand_HSET_STR(const char* key, const char* field, char* value, int* result);
+extern int redisCommand_LRANGE(const char* key, long long start, long long stop, int* result);
 
 
 #endif // _CONNECTION_H_

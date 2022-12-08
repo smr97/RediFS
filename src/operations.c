@@ -35,11 +35,11 @@ enum {
   NODE_INFO_MODE = 0,
   NODE_INFO_UID,
   NODE_INFO_GID,
+  NODE_INFO_SIZE,
   NODE_INFO_ACCESS_TIME_SEC,
   NODE_INFO_ACCESS_TIME_NSEC,
   NODE_INFO_MOD_TIME_SEC,
   NODE_INFO_MOD_TIME_NSEC,
-  NODE_INFO_SIZE,
   NODE_INFO_COUNT
 };
 
@@ -72,9 +72,11 @@ int redifs_getattr(const char *path, struct stat *stbuf) {
     return mode;
   }
 
-  uid_t uid = retrieveNodeInfo(nodeId, NODE_INFO_UID);
-  gid_t gid = retrieveNodeInfo(nodeId, NODE_INFO_GID);
-  size_t file_size = retrieveNodeInfo(nodeId, NODE_INFO_SIZE);
+  int result[] = {0,0,0};
+  int handle = retrieveNodeMultInfo(nodeId, NODE_INFO_UID, NODE_INFO_SIZE, result);
+  uid_t uid = result[0];
+  gid_t gid = result[1];
+  size_t file_size = result[2];
   stbuf->st_uid = uid;
   stbuf->st_gid = gid;
 
@@ -87,6 +89,7 @@ int redifs_getattr(const char *path, struct stat *stbuf) {
     stbuf->st_size = file_size;
   }
   clock_t end = clock();
+  releaseReplyHandle(handle);
   printf("************* Number of ticks %ld\n *****************", end - st);
 
   return 0;
