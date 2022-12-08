@@ -39,6 +39,7 @@ enum {
   NODE_INFO_ACCESS_TIME_NSEC,
   NODE_INFO_MOD_TIME_SEC,
   NODE_INFO_MOD_TIME_NSEC,
+  NODE_INFO_SIZE,
   NODE_INFO_COUNT
 };
 
@@ -72,6 +73,7 @@ int redifs_getattr(const char *path, struct stat *stbuf) {
 
   uid_t uid = retrieveNodeInfo(nodeId, NODE_INFO_UID);
   gid_t gid = retrieveNodeInfo(nodeId, NODE_INFO_GID);
+  size_t file_size = retrieveNodeInfo(nodeId, NODE_INFO_SIZE);
   stbuf->st_uid = uid;
   stbuf->st_gid = gid;
 
@@ -81,7 +83,7 @@ int redifs_getattr(const char *path, struct stat *stbuf) {
   } else if (mode & ISFILE) {
     stbuf->st_mode = mode;
     stbuf->st_nlink = 1;
-    stbuf->st_size = strlen("blablabla");
+    stbuf->st_size = file_size;
   }
 
   return 0;
@@ -111,6 +113,7 @@ int redifs_setattr(const char *path, struct stat *stbuf) {
 
   uid_t uid = retrieveNodeInfo(nodeId, NODE_INFO_UID);
   gid_t gid = retrieveNodeInfo(nodeId, NODE_INFO_GID);
+  size_t file_size = retrieveNodeInfo(nodeId, NODE_INFO_SIZE);
   stbuf->st_uid = uid;
   stbuf->st_gid = gid;
 
@@ -120,7 +123,7 @@ int redifs_setattr(const char *path, struct stat *stbuf) {
   } else if (mode & ISFILE) {
     stbuf->st_mode = mode;
     stbuf->st_nlink = 1;
-    stbuf->st_size = strlen("blablabla");
+    stbuf->st_size = file_size;
   }
 
   return 0;
@@ -154,6 +157,7 @@ int redifs_mknod(const char *path, mode_t mode, dev_t dev) {
   args[NODE_INFO_ACCESS_TIME_NSEC] = 1; // TODO.
   args[NODE_INFO_MOD_TIME_SEC] = 1;     // TODO.
   args[NODE_INFO_MOD_TIME_NSEC] = 1;    // TODO.
+  args[NODE_INFO_SIZE] = 0;
   redisResult = redisCommand_RPUSH_INT(key, args, NODE_INFO_COUNT, NULL);
   if (!redisResult) {
     return -EIO;
@@ -218,6 +222,7 @@ int redifs_mkdir(const char *path, mode_t mode) {
   args[NODE_INFO_ACCESS_TIME_NSEC] = 1; // TODO.
   args[NODE_INFO_MOD_TIME_SEC] = 1;     // TODO.
   args[NODE_INFO_MOD_TIME_NSEC] = 1;    // TODO.
+  args[NODE_INFO_SIZE] = 0;    // TODO.
   redisResult = redisCommand_RPUSH_INT(key, args, NODE_INFO_COUNT, NULL);
   if (!redisResult) {
     return -EIO;
@@ -424,6 +429,11 @@ int redifs_write(const char * path, const char *buf, size_t size, off_t _offset,
   redisResult = redisCommand_HSET_STR(key, file_name, new_content, NULL);
   if (redisResult == 0){
       return -ENOENT;
+  }
+  snprintf(key, 1024, "%s::info:%lld", g_settings->name, nodeId);
+  redisResult = redisCommand_LSET_INT(key, NODE_INFO_SIZE, size);
+  if (!redisResult) {
+    return -EIO;
   }
   free(new_content);
   return size;
